@@ -129,6 +129,10 @@ impl Registrar for DBRegistrar {
             .regist_from_encoded_client(encoded_client)
             .map_err(|_e| RegistrarError::Unspecified)
     }
+
+    fn query(&self, client_id: &str) -> Option<EncodedClient> {
+        self.repo.find_client_by_id(client_id).ok()
+    }
 }
 
 #[cfg(test)]

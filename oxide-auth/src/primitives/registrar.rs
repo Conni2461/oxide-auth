@@ -46,6 +46,9 @@ pub trait Registrar {
 
     /// Insert or update the client record.
     fn register(&mut self, client: Client) -> Result<(), RegistrarError>;
+
+    /// Get a encoded client record.
+    fn query(&self, client_id: &str) -> Option<EncodedClient>;
 }
 
 /// An url that has been registered.
@@ -688,6 +691,10 @@ impl<'s, R: Registrar + ?Sized> Registrar for &'s mut R {
     fn register(&mut self, client: Client) -> Result<(), RegistrarError> {
         (**self).register(client)
     }
+
+    fn query(&self, client_id: &str) -> Option<EncodedClient> {
+        (**self).query(client_id)
+    }
 }
 
 impl<R: Registrar + ?Sized> Registrar for Box<R> {
@@ -705,6 +712,10 @@ impl<R: Registrar + ?Sized> Registrar for Box<R> {
 
     fn register(&mut self, client: Client) -> Result<(), RegistrarError> {
         (**self).register(client)
+    }
+
+    fn query(&self, client_id: &str) -> Option<EncodedClient> {
+        (**self).query(client_id)
     }
 }
 
@@ -724,6 +735,10 @@ impl<'s, R: Registrar + ?Sized + 's> Registrar for MutexGuard<'s, R> {
     fn register(&mut self, client: Client) -> Result<(), RegistrarError> {
         (**self).register(client)
     }
+
+    fn query(&self, client_id: &str) -> Option<EncodedClient> {
+        (**self).query(client_id)
+    }
 }
 
 impl<'s, R: Registrar + ?Sized + 's> Registrar for RwLockWriteGuard<'s, R> {
@@ -741,6 +756,10 @@ impl<'s, R: Registrar + ?Sized + 's> Registrar for RwLockWriteGuard<'s, R> {
 
     fn register(&mut self, client: Client) -> Result<(), RegistrarError> {
         (**self).register(client)
+    }
+
+    fn query(&self, client_id: &str) -> Option<EncodedClient> {
+        (**self).query(client_id)
     }
 }
 
@@ -805,6 +824,10 @@ impl Registrar for ClientMap {
         self.clients
             .insert(client.client_id.clone(), client.encode(password_policy));
         Ok(())
+    }
+
+    fn query(&self, client_id: &str) -> Option<EncodedClient> {
+        self.clients.get(client_id).map(Clone::clone)
     }
 }
 
