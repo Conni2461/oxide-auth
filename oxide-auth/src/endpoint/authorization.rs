@@ -259,7 +259,7 @@ impl<E: Endpoint<R>, R: WebRequest> WrappedAuthorization<E, R> {
 }
 
 impl<E: Endpoint<R>, R: WebRequest> AuthorizationEndpoint for WrappedAuthorization<E, R> {
-    fn registrar(&self) -> &dyn Registrar {
+    fn registrar(&mut self) -> &mut dyn Registrar {
         self.inner.registrar().unwrap()
     }
 

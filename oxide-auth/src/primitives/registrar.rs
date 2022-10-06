@@ -10,8 +10,7 @@ use std::cmp;
 use std::collections::HashMap;
 use std::fmt;
 use std::iter::{Extend, FromIterator};
-use std::rc::Rc;
-use std::sync::{Arc, MutexGuard, RwLockWriteGuard};
+use std::sync::{MutexGuard, RwLockWriteGuard};
 
 use argon2::{self, Config};
 use once_cell::sync::Lazy;
@@ -44,6 +43,9 @@ pub trait Registrar {
 
     /// Try to login as client with some authentication.
     fn check(&self, client_id: &str, passphrase: Option<&[u8]>) -> Result<(), RegistrarError>;
+
+    /// Insert or update the client record.
+    fn register(&mut self, client: Client) -> Result<(), RegistrarError>;
 }
 
 /// An url that has been registered.
@@ -636,13 +638,6 @@ impl ClientMap {
         ClientMap::default()
     }
 
-    /// Insert or update the client record.
-    pub fn register_client(&mut self, client: Client) {
-        let password_policy = Self::current_policy(&self.password_policy);
-        self.clients
-            .insert(client.client_id.clone(), client.encode(password_policy));
-    }
-
     /// Change how passwords are encoded while stored.
     pub fn set_password_policy<P: PasswordPolicy + 'static>(&mut self, new_policy: P) {
         self.password_policy = Some(Box::new(new_policy))
@@ -662,7 +657,7 @@ impl Extend<Client> for ClientMap {
     where
         I: IntoIterator<Item = Client>,
     {
-        iter.into_iter().for_each(|client| self.register_client(client))
+        iter.into_iter().for_each(|client| drop(self.register(client)))
     }
 }
 
@@ -674,20 +669,6 @@ impl FromIterator<Client> for ClientMap {
         let mut into = ClientMap::new();
         into.extend(iter);
         into
-    }
-}
-
-impl<'s, R: Registrar + ?Sized> Registrar for &'s R {
-    fn bound_redirect<'a>(&self, bound: ClientUrl<'a>) -> Result<BoundClient<'a>, RegistrarError> {
-        (**self).bound_redirect(bound)
-    }
-
-    fn negotiate(&self, bound: BoundClient, scope: Option<Scope>) -> Result<PreGrant, RegistrarError> {
-        (**self).negotiate(bound, scope)
-    }
-
-    fn check(&self, client_id: &str, passphrase: Option<&[u8]>) -> Result<(), RegistrarError> {
-        (**self).check(client_id, passphrase)
     }
 }
 
@@ -703,6 +684,10 @@ impl<'s, R: Registrar + ?Sized> Registrar for &'s mut R {
     fn check(&self, client_id: &str, passphrase: Option<&[u8]>) -> Result<(), RegistrarError> {
         (**self).check(client_id, passphrase)
     }
+
+    fn register(&mut self, client: Client) -> Result<(), RegistrarError> {
+        (**self).register(client)
+    }
 }
 
 impl<R: Registrar + ?Sized> Registrar for Box<R> {
@@ -717,33 +702,9 @@ impl<R: Registrar + ?Sized> Registrar for Box<R> {
     fn check(&self, client_id: &str, passphrase: Option<&[u8]>) -> Result<(), RegistrarError> {
         (**self).check(client_id, passphrase)
     }
-}
 
-impl<R: Registrar + ?Sized> Registrar for Rc<R> {
-    fn bound_redirect<'a>(&self, bound: ClientUrl<'a>) -> Result<BoundClient<'a>, RegistrarError> {
-        (**self).bound_redirect(bound)
-    }
-
-    fn negotiate(&self, bound: BoundClient, scope: Option<Scope>) -> Result<PreGrant, RegistrarError> {
-        (**self).negotiate(bound, scope)
-    }
-
-    fn check(&self, client_id: &str, passphrase: Option<&[u8]>) -> Result<(), RegistrarError> {
-        (**self).check(client_id, passphrase)
-    }
-}
-
-impl<R: Registrar + ?Sized> Registrar for Arc<R> {
-    fn bound_redirect<'a>(&self, bound: ClientUrl<'a>) -> Result<BoundClient<'a>, RegistrarError> {
-        (**self).bound_redirect(bound)
-    }
-
-    fn negotiate(&self, bound: BoundClient, scope: Option<Scope>) -> Result<PreGrant, RegistrarError> {
-        (**self).negotiate(bound, scope)
-    }
-
-    fn check(&self, client_id: &str, passphrase: Option<&[u8]>) -> Result<(), RegistrarError> {
-        (**self).check(client_id, passphrase)
+    fn register(&mut self, client: Client) -> Result<(), RegistrarError> {
+        (**self).register(client)
     }
 }
 
@@ -759,6 +720,10 @@ impl<'s, R: Registrar + ?Sized + 's> Registrar for MutexGuard<'s, R> {
     fn check(&self, client_id: &str, passphrase: Option<&[u8]>) -> Result<(), RegistrarError> {
         (**self).check(client_id, passphrase)
     }
+
+    fn register(&mut self, client: Client) -> Result<(), RegistrarError> {
+        (**self).register(client)
+    }
 }
 
 impl<'s, R: Registrar + ?Sized + 's> Registrar for RwLockWriteGuard<'s, R> {
@@ -772,6 +737,10 @@ impl<'s, R: Registrar + ?Sized + 's> Registrar for RwLockWriteGuard<'s, R> {
 
     fn check(&self, client_id: &str, passphrase: Option<&[u8]>) -> Result<(), RegistrarError> {
         (**self).check(client_id, passphrase)
+    }
+
+    fn register(&mut self, client: Client) -> Result<(), RegistrarError> {
+        (**self).register(client)
     }
 }
 
@@ -828,6 +797,13 @@ impl Registrar for ClientMap {
                 RegisteredClient::new(client, password_policy).check_authentication(passphrase)
             })?;
 
+        Ok(())
+    }
+
+    fn register(&mut self, client: Client) -> Result<(), RegistrarError> {
+        let password_policy = Self::current_policy(&self.password_policy);
+        self.clients
+            .insert(client.client_id.clone(), client.encode(password_policy));
         Ok(())
     }
 }
@@ -931,7 +907,7 @@ mod tests {
         let client = Client::public(client_id, redirect_uri.into(), default_scope)
             .with_additional_redirect_uris(additional_redirect_uris);
         let mut client_map = ClientMap::new();
-        client_map.register_client(client);
+        client_map.register(client);
 
         assert_eq!(
             client_map
@@ -966,7 +942,7 @@ mod tests {
     #[test]
     fn client_map() {
         let mut client_map = ClientMap::new();
-        simple_test_suite(&mut client_map, ClientMap::register_client);
+        simple_test_suite(&mut client_map, ClientMap::register);
     }
 
     #[test]

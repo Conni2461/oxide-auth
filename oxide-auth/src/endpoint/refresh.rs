@@ -211,7 +211,7 @@ impl<'a, R: WebRequest + 'a> WrappedRequest<'a, R> {
 }
 
 impl<E: Endpoint<R>, R: WebRequest> RefreshEndpoint for WrappedRefresh<E, R> {
-    fn registrar(&self) -> &dyn Registrar {
+    fn registrar(&mut self) -> &mut dyn Registrar {
         self.inner.registrar().unwrap()
     }
 

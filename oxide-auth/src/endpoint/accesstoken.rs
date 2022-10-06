@@ -184,7 +184,7 @@ fn token_error<E: Endpoint<R>, R: WebRequest>(
 }
 
 impl<E: Endpoint<R>, R: WebRequest> TokenEndpoint for WrappedToken<E, R> {
-    fn registrar(&self) -> &dyn Registrar {
+    fn registrar(&mut self) -> &mut dyn Registrar {
         self.inner.registrar().unwrap()
     }
 

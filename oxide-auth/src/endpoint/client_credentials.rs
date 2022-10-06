@@ -242,7 +242,7 @@ fn client_credentials_error<E: Endpoint<R>, R: WebRequest>(
 }
 
 impl<E: Endpoint<R>, R: WebRequest> ClientCredentialsEndpoint for WrappedToken<E, R> {
-    fn registrar(&self) -> &dyn Registrar {
+    fn registrar(&mut self) -> &mut dyn Registrar {
         self.inner.registrar().unwrap()
     }
 

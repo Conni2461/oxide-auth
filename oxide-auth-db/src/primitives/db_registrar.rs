@@ -43,16 +43,6 @@ impl DBRegistrar {
         })
     }
 
-    /// Insert or update the client record.
-    pub fn register_client(&mut self, client: Client) -> Result<(), RegistrarError> {
-        let password_policy = Self::current_policy(&self.password_policy);
-        let encoded_client = client.encode(password_policy);
-
-        self.repo
-            .regist_from_encoded_client(encoded_client)
-            .map_err(|_e| RegistrarError::Unspecified)
-    }
-
     /// Change how passwords are encoded while stored.
     pub fn set_password_policy<P: PasswordPolicy + 'static>(&mut self, new_policy: P) {
         self.password_policy = Some(Box::new(new_policy))
@@ -72,9 +62,7 @@ impl Extend<Client> for DBRegistrar {
     where
         I: IntoIterator<Item = Client>,
     {
-        iter.into_iter().for_each(|client| {
-            self.register_client(client);
-        })
+        iter.into_iter().for_each(|client| drop(self.register(client)))
     }
 }
 
@@ -131,6 +119,15 @@ impl Registrar for DBRegistrar {
             RegisteredClient::new(&op_client, password_policy).check_authentication(passphrase)
         })?;
         Ok(())
+    }
+
+    fn register(&mut self, client: Client) -> Result<(), RegistrarError> {
+        let password_policy = Self::current_policy(&self.password_policy);
+        let encoded_client = client.encode(password_policy);
+
+        self.repo
+            .regist_from_encoded_client(encoded_client)
+            .map_err(|_e| RegistrarError::Unspecified)
     }
 }
 
@@ -196,7 +193,7 @@ mod tests {
             "client:".parse().unwrap(),
         )
         .unwrap();
-        db_registrar.register_client(client);
+        db_registrar.register(client);
 
         assert_eq!(
             db_registrar
@@ -256,7 +253,7 @@ mod tests {
             "default".parse().unwrap(),
         );
 
-        oauth_service.register_client(public_client);
+        oauth_service.register(public_client);
         oauth_service
             .check(public_id, None)
             .expect("Authorization of public client has changed");
@@ -272,7 +269,7 @@ mod tests {
             private_passphrase,
         );
 
-        oauth_service.register_client(private_client);
+        oauth_service.register(private_client);
 
         oauth_service
             .check(private_id, Some(private_passphrase))

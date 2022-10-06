@@ -59,7 +59,7 @@ impl Extension for () {
 /// by internally using `primitives`, as it is implemented in the `frontend` module.
 pub trait Endpoint {
     /// 'Bind' a client and redirect uri from a request to internally approved parameters.
-    fn registrar(&self) -> &dyn Registrar;
+    fn registrar(&mut self) -> &mut dyn Registrar;
 
     /// Generate an authorization code for a given grant.
     fn authorizer(&mut self) -> &mut dyn Authorizer;

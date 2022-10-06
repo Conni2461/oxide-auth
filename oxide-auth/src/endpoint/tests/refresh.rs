@@ -47,7 +47,7 @@ impl RefreshTokenSetup {
             extensions: Extensions::new(),
         };
 
-        registrar.register_client(client);
+        registrar.register(client);
         let issued = issuer.issue(grant).unwrap();
         assert!(issued.refreshable());
         let refresh_token = issued.refresh.clone().unwrap();
@@ -84,7 +84,7 @@ impl RefreshTokenSetup {
             extensions: Extensions::new(),
         };
 
-        registrar.register_client(client);
+        registrar.register(client);
         let issued = issuer.issue(grant).unwrap();
         assert!(issued.refreshable());
         let refresh_token = issued.refresh.clone().unwrap();
@@ -252,7 +252,7 @@ fn public_private_invalid_grant() {
         EXAMPLE_SCOPE.parse().unwrap(),
         EXAMPLE_PASSPHRASE.as_bytes(),
     );
-    setup.registrar.register_client(client);
+    setup.registrar.register(client);
 
     let basic_authorization = base64::encode(&format!("{}:{}", "PrivateClient", EXAMPLE_PASSPHRASE));
     let basic_authorization = format!("Basic {}", basic_authorization);

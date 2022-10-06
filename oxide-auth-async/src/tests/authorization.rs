@@ -79,7 +79,7 @@ impl AuthorizationSetup {
             EXAMPLE_SCOPE.parse().unwrap(),
             EXAMPLE_PASSPHRASE.as_bytes(),
         );
-        registrar.register_client(client);
+        registrar.register(client);
         AuthorizationSetup {
             registrar,
             authorizer,

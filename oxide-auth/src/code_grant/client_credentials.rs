@@ -80,7 +80,7 @@ impl Extension for () {
 /// by internally using `primitives`, as it is implemented in the `frontend` module.
 pub trait Endpoint {
     /// Get the client corresponding to some id.
-    fn registrar(&self) -> &dyn Registrar;
+    fn registrar(&mut self) -> &mut dyn Registrar;
 
     /// Return the issuer instance to create the client credentials.
     fn issuer(&mut self) -> &mut dyn Issuer;

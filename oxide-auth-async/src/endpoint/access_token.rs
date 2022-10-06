@@ -187,7 +187,7 @@ where
     E: Endpoint<R>,
     R: WebRequest,
 {
-    fn registrar(&self) -> &(dyn Registrar + Sync) {
+    fn registrar(&mut self) -> &mut (dyn Registrar + Sync) {
         self.inner.registrar().unwrap()
     }
 

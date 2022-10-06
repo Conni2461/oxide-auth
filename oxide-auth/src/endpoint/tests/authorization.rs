@@ -27,7 +27,7 @@ impl AuthorizationSetup {
             EXAMPLE_SCOPE.parse().unwrap(),
             EXAMPLE_PASSPHRASE.as_bytes(),
         );
-        registrar.register_client(client);
+        registrar.register(client);
         AuthorizationSetup {
             registrar,
             authorizer,
@@ -176,7 +176,7 @@ fn auth_request_silent_mismatching_literal_redirect() {
         EXAMPLE_SCOPE.parse().unwrap(),
         EXAMPLE_PASSPHRASE.as_bytes(),
     );
-    setup.registrar.register_client(client);
+    setup.registrar.register(client);
 
     let mismatching_redirect = CraftedRequest {
         query: Some(

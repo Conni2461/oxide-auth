@@ -30,7 +30,7 @@ pub fn main() {
                 .into(), // Redirection url
             "default".parse().unwrap(),
         ); // Allowed client scope
-        clients.register_client(client);
+        clients.register(client);
         clients
     };
 

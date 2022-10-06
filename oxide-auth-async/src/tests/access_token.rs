@@ -105,7 +105,7 @@ impl AccessTokenSetup {
         };
 
         let authtoken = smol::block_on(authorizer.authorize(authrequest)).unwrap();
-        registrar.register_client(client);
+        registrar.register(client);
 
         let basic_authorization =
             base64::encode(&format!("{}:{}", EXAMPLE_CLIENT_ID, EXAMPLE_PASSPHRASE));
@@ -140,7 +140,7 @@ impl AccessTokenSetup {
         };
 
         let authtoken = smol::block_on(authorizer.authorize(authrequest)).unwrap();
-        registrar.register_client(client);
+        registrar.register(client);
 
         let basic_authorization =
             base64::encode(&format!("{}:{}", EXAMPLE_CLIENT_ID, EXAMPLE_PASSPHRASE));
@@ -277,7 +277,7 @@ fn access_equivalent_url() {
         EXAMPLE_SCOPE.parse().unwrap(),
     );
 
-    setup.registrar.register_client(confusing_client);
+    setup.registrar.register(confusing_client);
 
     let authrequest = Grant {
         client_id: CLIENT_ID.to_string(),

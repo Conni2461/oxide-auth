@@ -31,7 +31,7 @@ impl PkceSetup {
         );
 
         let mut registrar = ClientMap::new();
-        registrar.register_client(client);
+        registrar.register(client);
 
         let token = "ExampleAuthorizationToken".to_string();
         let authorizer = AuthMap::new(TestGenerator(token.clone()));

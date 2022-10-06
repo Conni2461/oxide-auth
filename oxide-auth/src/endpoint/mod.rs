@@ -390,7 +390,7 @@ pub trait Endpoint<Request: WebRequest> {
     ///
     /// Returning `None` will implicate failing any flow that requires a registrar but does not
     /// have any effect on flows that do not require one.
-    fn registrar(&self) -> Option<&dyn Registrar>;
+    fn registrar(&mut self) -> Option<&mut dyn Registrar>;
 
     /// An authorizer if this endpoint can access one.
     ///
@@ -560,7 +560,7 @@ impl<'a, W: WebRequest> WebRequest for &'a mut W {
 impl<'a, R: WebRequest, E: Endpoint<R>> Endpoint<R> for &'a mut E {
     type Error = E::Error;
 
-    fn registrar(&self) -> Option<&dyn Registrar> {
+    fn registrar(&mut self) -> Option<&mut dyn Registrar> {
         (**self).registrar()
     }
 
@@ -600,7 +600,7 @@ impl<'a, R: WebRequest, E: Endpoint<R>> Endpoint<R> for &'a mut E {
 impl<'a, R: WebRequest, E: Endpoint<R> + 'a> Endpoint<R> for Box<E> {
     type Error = E::Error;
 
-    fn registrar(&self) -> Option<&dyn Registrar> {
+    fn registrar(&mut self) -> Option<&mut dyn Registrar> {
         (**self).registrar()
     }
 

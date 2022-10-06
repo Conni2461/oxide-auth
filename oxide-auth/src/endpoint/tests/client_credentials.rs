@@ -27,7 +27,7 @@ impl ClientCredentialsSetup {
             EXAMPLE_SCOPE.parse().unwrap(),
             EXAMPLE_PASSPHRASE.as_bytes(),
         );
-        registrar.register_client(client);
+        registrar.register(client);
         let basic_authorization =
             base64::encode(&format!("{}:{}", EXAMPLE_CLIENT_ID, EXAMPLE_PASSPHRASE));
         ClientCredentialsSetup {
@@ -47,7 +47,7 @@ impl ClientCredentialsSetup {
             RegisteredUrl::Semantic(EXAMPLE_REDIRECT_URI.parse().unwrap()),
             EXAMPLE_SCOPE.parse().unwrap(),
         );
-        registrar.register_client(client);
+        registrar.register(client);
         let basic_authorization =
             base64::encode(&format!("{}:{}", EXAMPLE_CLIENT_ID, EXAMPLE_PASSPHRASE));
         ClientCredentialsSetup {

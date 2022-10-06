@@ -193,7 +193,7 @@ pub struct ApprovedGrant {
 /// better ideas, I'll be grateful for opening an item on the Issue tracker.
 pub trait OptRegistrar {
     /// Reference this as a `Registrar` or `Option::None`.
-    fn opt_ref(&self) -> Option<&dyn Registrar>;
+    fn opt_ref(&mut self) -> Option<&mut dyn Registrar>;
 }
 
 /// Like `AsMut<Authorizer +'_>` but in a way that is expressible.
@@ -245,7 +245,7 @@ pub trait ResponseCreator<W: WebRequest> {
 }
 
 type Authorization<'a, W> = Generic<
-    &'a (dyn Registrar + 'a),
+    &'a mut (dyn Registrar + 'a),
     &'a mut (dyn Authorizer + 'a),
     Vacant,
     &'a mut (dyn OwnerSolicitor<W> + 'a),
@@ -253,7 +253,7 @@ type Authorization<'a, W> = Generic<
     Vacant,
 >;
 type AccessToken<'a> = Generic<
-    &'a (dyn Registrar + 'a),
+    &'a mut (dyn Registrar + 'a),
     &'a mut (dyn Authorizer + 'a),
     &'a mut (dyn Issuer + 'a),
     Vacant,
@@ -261,7 +261,7 @@ type AccessToken<'a> = Generic<
     Vacant,
 >;
 type ClientCredentials<'a, W> = Generic<
-    &'a (dyn Registrar + 'a),
+    &'a mut (dyn Registrar + 'a),
     Vacant,
     &'a mut (dyn Issuer + 'a),
     &'a mut (dyn OwnerSolicitor<W> + 'a),
@@ -269,7 +269,7 @@ type ClientCredentials<'a, W> = Generic<
     Vacant,
 >;
 type Refresh<'a> =
-    Generic<&'a (dyn Registrar + 'a), Vacant, &'a mut (dyn Issuer + 'a), Vacant, Vacant, Vacant>;
+    Generic<&'a mut (dyn Registrar + 'a), Vacant, &'a mut (dyn Issuer + 'a), Vacant, Vacant, Vacant>;
 type Resource<'a> = Generic<Vacant, Vacant, &'a mut (dyn Issuer + 'a), Vacant, &'a [Scope], Vacant>;
 
 /// Create an ad-hoc authorization flow.
@@ -281,7 +281,7 @@ type Resource<'a> = Generic<Vacant, Vacant, &'a mut (dyn Issuer + 'a), Vacant, &
 /// only takes references is a conscious choice to maintain forwards portability while encouraging
 /// the transition to custom `Endpoint` implementations instead.
 pub fn authorization_flow<'a, W>(
-    registrar: &'a dyn Registrar, authorizer: &'a mut dyn Authorizer,
+    registrar: &'a mut dyn Registrar, authorizer: &'a mut dyn Authorizer,
     solicitor: &'a mut dyn OwnerSolicitor<W>,
 ) -> AuthorizationFlow<Authorization<'a, W>, W>
 where
@@ -312,7 +312,7 @@ where
 /// only takes references is a conscious choice to maintain forwards portability while encouraging
 /// the transition to custom `Endpoint` implementations instead.
 pub fn access_token_flow<'a, W>(
-    registrar: &'a dyn Registrar, authorizer: &'a mut dyn Authorizer, issuer: &'a mut dyn Issuer,
+    registrar: &'a mut dyn Registrar, authorizer: &'a mut dyn Authorizer, issuer: &'a mut dyn Issuer,
 ) -> AccessTokenFlow<AccessToken<'a>, W>
 where
     W: WebRequest,
@@ -342,7 +342,7 @@ where
 /// only takes references is a conscious choice to maintain forwards portability while encouraging
 /// the transition to custom `Endpoint` implementations instead.
 pub fn client_credentials_flow<'a, W>(
-    registrar: &'a dyn Registrar, issuer: &'a mut dyn Issuer, solicitor: &'a mut dyn OwnerSolicitor<W>,
+    registrar: &'a mut dyn Registrar, issuer: &'a mut dyn Issuer, solicitor: &'a mut dyn OwnerSolicitor<W>,
 ) -> ClientCredentialsFlow<ClientCredentials<'a, W>, W>
 where
     W: WebRequest,
@@ -402,7 +402,7 @@ where
 /// only takes references is a conscious choice to maintain forwards portability while encouraging
 /// the transition to custom `Endpoint` implementations instead.
 pub fn refresh_flow<'a, W>(
-    registrar: &'a dyn Registrar, issuer: &'a mut dyn Issuer,
+    registrar: &'a mut dyn Registrar, issuer: &'a mut dyn Issuer,
 ) -> RefreshFlow<Refresh<'a>, W>
 where
     W: WebRequest,
@@ -549,7 +549,7 @@ where
 {
     type Error = Error;
 
-    fn registrar(&self) -> Option<&dyn Registrar> {
+    fn registrar(&mut self) -> Option<&mut dyn Registrar> {
         self.0.registrar()
     }
 
@@ -598,7 +598,7 @@ where
 {
     type Error = Error<W>;
 
-    fn registrar(&self) -> Option<&dyn Registrar> {
+    fn registrar(&mut self) -> Option<&mut dyn Registrar> {
         self.registrar.opt_ref()
     }
 
@@ -632,7 +632,7 @@ where
 }
 
 impl<T: Registrar> OptRegistrar for T {
-    fn opt_ref(&self) -> Option<&dyn Registrar> {
+    fn opt_ref(&mut self) -> Option<&mut dyn Registrar> {
         Some(self)
     }
 }
@@ -650,7 +650,7 @@ impl<T: Issuer> OptIssuer for T {
 }
 
 impl OptRegistrar for Vacant {
-    fn opt_ref(&self) -> Option<&dyn Registrar> {
+    fn opt_ref(&mut self) -> Option<&mut dyn Registrar> {
         Option::None
     }
 }

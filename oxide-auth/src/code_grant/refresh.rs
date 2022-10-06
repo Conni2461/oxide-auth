@@ -53,7 +53,7 @@ pub trait Request {
 /// [`Refresh`]: struct.Refresh.html
 pub trait Endpoint {
     /// Authenticate the requesting confidential client.
-    fn registrar(&self) -> &dyn Registrar;
+    fn registrar(&mut self) -> &mut dyn Registrar;
 
     /// Recover and test the provided refresh token then issue new tokens.
     fn issuer(&mut self) -> &mut dyn Issuer;

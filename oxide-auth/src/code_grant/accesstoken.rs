@@ -104,7 +104,7 @@ impl Extension for () {
 /// by internally using `primitives`, as it is implemented in the `frontend` module.
 pub trait Endpoint {
     /// Get the client corresponding to some id.
-    fn registrar(&self) -> &dyn Registrar;
+    fn registrar(&mut self) -> &mut dyn Registrar;
 
     /// Get the authorizer from which we can recover the authorization.
     fn authorizer(&mut self) -> &mut dyn Authorizer;

@@ -21,7 +21,7 @@ where
     ///
     /// Returning `None` will implicate failing any flow that requires a registrar but does not
     /// have any effect on flows that do not require one.
-    fn registrar(&self) -> Option<&(dyn Registrar + Sync)>;
+    fn registrar(&mut self) -> Option<&mut (dyn Registrar + Sync)>;
 
     /// An authorizer if this endpoint can access one.
     ///

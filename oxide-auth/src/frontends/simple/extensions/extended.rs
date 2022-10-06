@@ -53,7 +53,7 @@ where
 {
     type Error = Inner::Error;
 
-    fn registrar(&self) -> Option<&dyn Registrar> {
+    fn registrar(&mut self) -> Option<&mut dyn Registrar> {
         self.inner.registrar()
     }
 
