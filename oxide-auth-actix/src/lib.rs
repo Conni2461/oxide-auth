@@ -118,18 +118,6 @@ pub struct OAuthRequest {
     body: Option<NormalizedParameter>,
 }
 
-impl OAuthResponse {
-    /// Get the headers from `OAuthResponse`
-    pub fn get_headers(&self) -> HeaderMap {
-        self.headers.clone()
-    }
-
-    /// Get the body from `OAuthResponse`
-    pub fn get_body(&self) -> Option<String> {
-        self.body.clone()
-    }
-}
-
 /// Type implementing `WebRequest` as well as `FromRequest` for use in guarding resources
 ///
 /// This is useful over [OAuthRequest] since [OAuthResource] doesn't consume the body of the
@@ -141,9 +129,9 @@ pub struct OAuthResource {
 #[derive(Clone, Debug)]
 /// Type implementing `WebResponse` and `Responder` for use in route handlers
 pub struct OAuthResponse {
-    status: StatusCode,
-    headers: HeaderMap,
-    body: Option<String>,
+    pub status: StatusCode,
+    pub headers: HeaderMap,
+    pub body: Option<String>,
 }
 
 #[derive(Debug)]
