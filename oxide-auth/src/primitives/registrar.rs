@@ -794,7 +794,7 @@ impl Registrar for ClientMap {
     }
 
     /// Always overrides the scope with a default scope.
-    fn negotiate(&self, bound: BoundClient, _scope: Option<Scope>) -> Result<PreGrant, RegistrarError> {
+    fn negotiate(&self, bound: BoundClient, scope: Option<Scope>) -> Result<PreGrant, RegistrarError> {
         let client = self
             .clients
             .get(bound.client_id.as_ref())
@@ -802,7 +802,7 @@ impl Registrar for ClientMap {
         Ok(PreGrant {
             client_id: bound.client_id.into_owned(),
             redirect_uri: bound.redirect_uri.into_owned(),
-            scope: client.default_scope.clone(),
+            scope: scope.unwrap_or_else(|| client.default_scope.clone()),
         })
     }
 

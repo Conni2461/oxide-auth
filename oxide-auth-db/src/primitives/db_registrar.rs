@@ -95,7 +95,7 @@ impl Registrar for DBRegistrar {
     }
 
     fn negotiate<'a>(
-        &self, bound: BoundClient<'a>, _scope: Option<Scope>,
+        &self, bound: BoundClient<'a>, scope: Option<Scope>,
     ) -> Result<PreGrant, RegistrarError> {
         let client = self
             .repo
@@ -104,7 +104,7 @@ impl Registrar for DBRegistrar {
         Ok(PreGrant {
             client_id: bound.client_id.into_owned(),
             redirect_uri: bound.redirect_uri.into_owned(),
-            scope: client.default_scope,
+            scope: scope.unwrap_or_else(|| client.default_scope),
         })
     }
 
