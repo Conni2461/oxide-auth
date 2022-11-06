@@ -172,7 +172,33 @@ fn authorization_error<E: Endpoint<R>, R: WebRequest>(
     endpoint: &mut E, request: &mut R, error: AuthorizationError,
 ) -> Result<R::Response, E::Error> {
     match error {
-        AuthorizationError::Ignore => Err(endpoint.error(OAuthError::DenySilently)),
+        AuthorizationError::Ignore => {
+            let mut response = endpoint.response(
+                request,
+                InnerTemplate::Redirect {
+                    authorization_error: None,
+                }
+                .into(),
+            )?;
+            let query = request
+                .query()
+                .map_err(|_| endpoint.error(OAuthError::BadRequest))?;
+            let uri = &query
+                .unique_value("redirect_uri")
+                .ok_or(|| "missing uri")
+                .map_err(|_| endpoint.error(OAuthError::BadRequest))?;
+
+            let uri = match query.unique_value("state") {
+                Some(v) => {
+                    url::Url::parse_with_params(uri, &[("error", "invalid_client"), ("state", &v)])
+                }
+                None => url::Url::parse_with_params(uri, &[("error", "invalid_client")]),
+            }
+            .map_err(|_| endpoint.error(OAuthError::BadRequest))?;
+
+            response.redirect(uri).map_err(|err| endpoint.web_error(err))?;
+            Ok(response)
+        }
         AuthorizationError::Redirect(mut target) => {
             let mut response = endpoint.response(
                 request,
