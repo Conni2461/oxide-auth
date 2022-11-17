@@ -12,8 +12,8 @@ use r2d2_redis::redis::RedisError;
 /// A database client service which implemented Registrar.
 /// db: repository service to query stored clients or regist new client.
 /// password_policy: to encode client_secret.
-pub struct DBRegistrar {
-    pub repo: DataSource,
+pub struct DBRegistrar<T: OauthClientDBRepository> {
+    pub repo: T,
     password_policy: Option<Box<dyn PasswordPolicy>>,
 }
 
@@ -33,14 +33,13 @@ pub trait OauthClientDBRepository {
 
 static DEFAULT_PASSWORD_POLICY: Lazy<Argon2> = Lazy::new(|| Argon2::default());
 
-impl DBRegistrar {
+impl<T: OauthClientDBRepository> DBRegistrar<T> {
     /// Create an DB connection recording to features.
-    pub fn new(url: String, max_pool_size: u32, client_prefix: String) -> Result<Self, RedisError> {
-        let repo = DataSource::new(url, max_pool_size, client_prefix)?;
-        Ok(DBRegistrar {
+    pub fn new(repo: T) -> Self {
+        DBRegistrar {
             repo,
             password_policy: None,
-        })
+        }
     }
 
     /// Change how passwords are encoded while stored.
@@ -57,7 +56,7 @@ impl DBRegistrar {
     }
 }
 
-impl Extend<Client> for DBRegistrar {
+impl<T: OauthClientDBRepository> Extend<Client> for DBRegistrar<T> {
     fn extend<I>(&mut self, iter: I)
     where
         I: IntoIterator<Item = Client>,
@@ -66,7 +65,7 @@ impl Extend<Client> for DBRegistrar {
     }
 }
 
-impl Registrar for DBRegistrar {
+impl<T: OauthClientDBRepository> Registrar for DBRegistrar<T> {
     fn bound_redirect<'a>(&self, bound: ClientUrl<'a>) -> Result<BoundClient<'a>, RegistrarError> {
         let client = match self.repo.find_client_by_id(bound.client_id.as_ref()) {
             Ok(detail) => detail,

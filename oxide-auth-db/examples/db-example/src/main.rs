@@ -16,7 +16,7 @@ use oxide_auth_actix::{
     Resource, Token, WebError,
 };
 use std::{thread, env};
-use oxide_auth_db::primitives::db_registrar::DBRegistrar;
+use oxide_auth_db::{primitives::db_registrar::DBRegistrar, db_service::redis::RedisDataSource};
 
 static DENY_TEXT: &str = "<html>
 This page should be accessed via an oauth token from the client in the example. Click
@@ -27,7 +27,7 @@ here</a> to begin the authorization process.
 
 struct State {
     endpoint: Generic<
-        DBRegistrar,
+        DBRegistrar<RedisDataSource>,
         AuthMap<RandomGenerator>,
         TokenMap<RandomGenerator>,
         Vacant,
@@ -110,9 +110,9 @@ pub async fn main() -> std::io::Result<()> {
     // Start, then open in browser, don't care about this finishing.
     rt::spawn(start_browser());
 
-    let oauth_db_service =
-        DBRegistrar::new(redis_url, max_pool_size.parse::<u32>().unwrap(), client_prefix)
-            .expect("Invalid URL to build DBRegistrar");
+    let repo = RedisDataSource::new(redis_url, max_pool_size.parse::<u32>().unwrap(), client_prefix)
+        .expect("Invalid URL to build DBRegistrar");
+    let oauth_db_service = DBRegistrar::new(repo);
 
     let state = State::preconf_db_registrar(oauth_db_service).start();
 
@@ -141,7 +141,7 @@ pub async fn main() -> std::io::Result<()> {
 }
 
 impl State {
-    pub fn preconf_db_registrar(db_service: DBRegistrar) -> Self {
+    pub fn preconf_db_registrar(db_service: DBRegistrar<RedisDataSource>) -> Self {
         State {
             endpoint: Generic {
                 // A redis db registrar, user can use regist() function to pre regist some clients.
