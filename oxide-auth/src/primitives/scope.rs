@@ -46,7 +46,7 @@ use serde::{Deserialize, Serialize};
 ///
 #[derive(Clone, PartialEq, Eq)]
 pub struct Scope {
-    tokens: HashSet<String>,
+    pub tokens: HashSet<String>,
 }
 
 impl Serialize for Scope {
