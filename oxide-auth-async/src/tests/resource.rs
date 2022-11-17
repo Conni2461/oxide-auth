@@ -17,7 +17,7 @@ pub struct ResourceEndpoint<'a> {
 impl<'a> Endpoint<CraftedRequest> for ResourceEndpoint<'a> {
     type Error = Error<CraftedRequest>;
 
-    fn registrar(&self) -> Option<&(dyn crate::primitives::Registrar + Sync)> {
+    fn registrar(&mut self) -> Option<&mut (dyn crate::primitives::Registrar + Sync)> {
         None
     }
     fn authorizer_mut(&mut self) -> Option<&mut (dyn crate::primitives::Authorizer + Send)> {

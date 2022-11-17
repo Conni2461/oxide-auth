@@ -4,7 +4,7 @@ pub mod refresh {
 
     pub trait Endpoint {
         /// Authenticate the requesting confidential client.
-        fn registrar(&self) -> &(dyn crate::primitives::Registrar + Sync);
+        fn registrar(&mut self) -> &mut (dyn crate::primitives::Registrar + Sync);
 
         /// Recover and test the provided refresh token then issue new tokens.
         fn issuer(&mut self) -> &mut (dyn crate::primitives::Issuer + Send);
@@ -163,7 +163,7 @@ pub mod access_token {
 
     pub trait Endpoint {
         /// Get the client corresponding to some id.
-        fn registrar(&self) -> &(dyn crate::primitives::Registrar + Sync);
+        fn registrar(&mut self) -> &mut (dyn crate::primitives::Registrar + Sync);
 
         /// Get the authorizer from which we can recover the authorization.
         fn authorizer(&mut self) -> &mut (dyn crate::primitives::Authorizer + Send);
@@ -305,7 +305,7 @@ pub mod authorization {
     /// by internally using `primitives`, as it is implemented in the `frontend` module.
     pub trait Endpoint {
         /// 'Bind' a client and redirect uri from a request to internally approved parameters.
-        fn registrar(&self) -> &(dyn crate::primitives::Registrar + Sync);
+        fn registrar(&mut self) -> &mut (dyn crate::primitives::Registrar + Sync);
 
         /// Generate an authorization code for a given grant.
         fn authorizer(&mut self) -> &mut (dyn crate::primitives::Authorizer + Send);

@@ -23,12 +23,12 @@ use super::{Body, CraftedRequest, CraftedResponse, Status, ToSingleValueQuery};
 use super::{defaults::*, resource::ResourceEndpoint};
 
 struct RefreshTokenEndpoint<'a> {
-    registrar: &'a ClientMap,
+    registrar: &'a mut ClientMap,
     issuer: &'a mut TokenMap<RandomGenerator>,
 }
 
 impl<'a> RefreshTokenEndpoint<'a> {
-    fn new(registrar: &'a ClientMap, issuer: &'a mut TokenMap<RandomGenerator>) -> Self {
+    fn new(registrar: &'a mut ClientMap, issuer: &'a mut TokenMap<RandomGenerator>) -> Self {
         Self { registrar, issuer }
     }
 }
@@ -36,7 +36,7 @@ impl<'a> RefreshTokenEndpoint<'a> {
 impl<'a> Endpoint<CraftedRequest> for RefreshTokenEndpoint<'a> {
     type Error = Error<CraftedRequest>;
 
-    fn registrar(&self) -> Option<&(dyn crate::primitives::Registrar + Sync)> {
+    fn registrar(&mut self) -> Option<&mut (dyn crate::primitives::Registrar + Sync)> {
         Some(self.registrar)
     }
     fn authorizer_mut(&mut self) -> Option<&mut (dyn crate::primitives::Authorizer + Send)> {
@@ -78,6 +78,8 @@ struct RefreshTokenSetup {
 
 impl RefreshTokenSetup {
     fn private_client() -> Self {
+        use crate::primitives::Registrar;
+
         let mut registrar = ClientMap::new();
         let mut issuer = TokenMap::new(RandomGenerator::new(16));
 
@@ -116,6 +118,8 @@ impl RefreshTokenSetup {
     }
 
     fn public_client() -> Self {
+        use crate::primitives::Registrar;
+
         let mut registrar = ClientMap::new();
         let mut issuer = TokenMap::new(RandomGenerator::new(16));
 
@@ -152,7 +156,8 @@ impl RefreshTokenSetup {
 
     fn assert_success(&mut self, request: CraftedRequest) -> RefreshedToken {
         let mut refresh_flow =
-            RefreshFlow::prepare(RefreshTokenEndpoint::new(&self.registrar, &mut self.issuer)).unwrap();
+            RefreshFlow::prepare(RefreshTokenEndpoint::new(&mut self.registrar, &mut self.issuer))
+                .unwrap();
         let response = smol::block_on(refresh_flow.execute(request)).expect("Expected non-failed reponse");
         assert_eq!(response.status, Status::Ok);
         let body = match response.body {
@@ -172,7 +177,8 @@ impl RefreshTokenSetup {
     /// Check that the request failed with 400/401.
     fn assert_unauthenticated(&mut self, request: CraftedRequest) {
         let mut refresh_flow =
-            RefreshFlow::prepare(RefreshTokenEndpoint::new(&self.registrar, &mut self.issuer)).unwrap();
+            RefreshFlow::prepare(RefreshTokenEndpoint::new(&mut self.registrar, &mut self.issuer))
+                .unwrap();
         let response = smol::block_on(refresh_flow.execute(request)).expect("Expected non-failed reponse");
         let body = self.assert_json_body(&response);
         if response.status == Status::Unauthorized {
@@ -186,7 +192,8 @@ impl RefreshTokenSetup {
     /// The request as malformed and not processed any further.
     fn assert_invalid(&mut self, request: CraftedRequest) {
         let mut refresh_flow =
-            RefreshFlow::prepare(RefreshTokenEndpoint::new(&self.registrar, &mut self.issuer)).unwrap();
+            RefreshFlow::prepare(RefreshTokenEndpoint::new(&mut self.registrar, &mut self.issuer))
+                .unwrap();
         let response = smol::block_on(refresh_flow.execute(request)).expect("Expected non-failed reponse");
         let body = self.assert_json_body(&response);
         assert_eq!(response.status, Status::BadRequest);
@@ -198,7 +205,8 @@ impl RefreshTokenSetup {
     /// Client authorizes ok but does not match the grant.
     fn assert_invalid_grant(&mut self, request: CraftedRequest) {
         let mut refresh_flow =
-            RefreshFlow::prepare(RefreshTokenEndpoint::new(&self.registrar, &mut self.issuer)).unwrap();
+            RefreshFlow::prepare(RefreshTokenEndpoint::new(&mut self.registrar, &mut self.issuer))
+                .unwrap();
         let response = smol::block_on(refresh_flow.execute(request)).expect("Expected non-failed reponse");
         let body = self.assert_json_body(&response);
         assert_eq!(response.status, Status::BadRequest);
@@ -210,7 +218,8 @@ impl RefreshTokenSetup {
     /// Check that the request failed with 401.
     fn assert_wrong_authentication(&mut self, request: CraftedRequest) {
         let mut refresh_flow =
-            RefreshFlow::prepare(RefreshTokenEndpoint::new(&self.registrar, &mut self.issuer)).unwrap();
+            RefreshFlow::prepare(RefreshTokenEndpoint::new(&mut self.registrar, &mut self.issuer))
+                .unwrap();
         let response = smol::block_on(refresh_flow.execute(request)).expect("Expected non-failed reponse");
         assert_eq!(response.status, Status::Unauthorized);
         assert!(response.www_authenticate.is_some());
@@ -295,6 +304,8 @@ fn access_valid_private() {
 
 #[test]
 fn public_private_invalid_grant() {
+    use crate::primitives::Registrar;
+
     let mut setup = RefreshTokenSetup::public_client();
     let client = Client::confidential(
         "PrivateClient".into(),

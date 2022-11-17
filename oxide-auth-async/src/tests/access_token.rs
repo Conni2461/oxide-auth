@@ -31,14 +31,14 @@ struct AccessTokenSetup {
 }
 
 struct AccessTokenEndpoint<'a> {
-    registrar: &'a ClientMap,
+    registrar: &'a mut ClientMap,
     authorizer: &'a mut AuthMap<TestGenerator>,
     issuer: &'a mut TokenMap<TestGenerator>,
 }
 
 impl<'a> AccessTokenEndpoint<'a> {
     pub fn new(
-        registrar: &'a ClientMap, authorizer: &'a mut AuthMap<TestGenerator>,
+        registrar: &'a mut ClientMap, authorizer: &'a mut AuthMap<TestGenerator>,
         issuer: &'a mut TokenMap<TestGenerator>,
     ) -> Self {
         AccessTokenEndpoint {
@@ -52,7 +52,7 @@ impl<'a> AccessTokenEndpoint<'a> {
 impl<'a> Endpoint<CraftedRequest> for AccessTokenEndpoint<'a> {
     type Error = Error<CraftedRequest>;
 
-    fn registrar(&self) -> Option<&(dyn crate::primitives::Registrar + Sync)> {
+    fn registrar(&mut self) -> Option<&mut (dyn crate::primitives::Registrar + Sync)> {
         Some(self.registrar)
     }
     fn authorizer_mut(&mut self) -> Option<&mut (dyn crate::primitives::Authorizer + Send)> {
@@ -84,6 +84,8 @@ impl<'a> Endpoint<CraftedRequest> for AccessTokenEndpoint<'a> {
 
 impl AccessTokenSetup {
     fn private_client() -> Self {
+        use crate::primitives::Registrar;
+
         let mut registrar = ClientMap::new();
         let mut authorizer = AuthMap::new(TestGenerator("AuthToken".to_string()));
         let issuer = TokenMap::new(TestGenerator("AccessToken".to_string()));
@@ -120,6 +122,8 @@ impl AccessTokenSetup {
     }
 
     fn public_client() -> Self {
+        use crate::primitives::Registrar;
+
         let mut registrar = ClientMap::new();
         let mut authorizer = AuthMap::new(TestGenerator("AuthToken".to_string()));
         let issuer = TokenMap::new(TestGenerator("AccessToken".to_string()));
@@ -172,7 +176,7 @@ impl AccessTokenSetup {
 
     fn test_simple_error(&mut self, request: CraftedRequest) {
         let mut access_token_flow = AccessTokenFlow::prepare(AccessTokenEndpoint::new(
-            &self.registrar,
+            &mut self.registrar,
             &mut self.authorizer,
             &mut self.issuer,
         ))
@@ -185,7 +189,7 @@ impl AccessTokenSetup {
 
     fn test_success(&mut self, request: CraftedRequest) {
         let mut access_token_flow = AccessTokenFlow::prepare(AccessTokenEndpoint::new(
-            &self.registrar,
+            &mut self.registrar,
             &mut self.authorizer,
             &mut self.issuer,
         ))
@@ -198,7 +202,7 @@ impl AccessTokenSetup {
 
     fn test_success_body_credentials(&mut self, request: CraftedRequest) {
         let mut flow = AccessTokenFlow::prepare(AccessTokenEndpoint::new(
-            &self.registrar,
+            &mut self.registrar,
             &mut self.authorizer,
             &mut self.issuer,
         ))
@@ -263,7 +267,7 @@ fn access_valid_private() {
 // apply and would be counter intuitive as such information is not preserved in `url`.
 #[test]
 fn access_equivalent_url() {
-    use crate::primitives::Authorizer;
+    use crate::primitives::{Authorizer, Registrar};
 
     const CLIENT_ID: &str = "ConfusingClient";
     const REDIRECT_URL: &str = "https://client.example";

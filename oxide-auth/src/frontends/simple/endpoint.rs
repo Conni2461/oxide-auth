@@ -342,7 +342,8 @@ where
 /// only takes references is a conscious choice to maintain forwards portability while encouraging
 /// the transition to custom `Endpoint` implementations instead.
 pub fn client_credentials_flow<'a, W>(
-    registrar: &'a mut dyn Registrar, issuer: &'a mut dyn Issuer, solicitor: &'a mut dyn OwnerSolicitor<W>,
+    registrar: &'a mut dyn Registrar, issuer: &'a mut dyn Issuer,
+    solicitor: &'a mut dyn OwnerSolicitor<W>,
 ) -> ClientCredentialsFlow<ClientCredentials<'a, W>, W>
 where
     W: WebRequest,

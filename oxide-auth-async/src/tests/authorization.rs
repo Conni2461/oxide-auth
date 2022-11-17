@@ -14,14 +14,14 @@ use super::{Allow, Deny};
 use super::defaults::*;
 
 struct AuthorizationEndpoint<'a> {
-    registrar: &'a ClientMap,
+    registrar: &'a mut ClientMap,
     authorizer: &'a mut AuthMap<TestGenerator>,
     solicitor: &'a mut (dyn OwnerSolicitor<CraftedRequest> + Send + Sync),
 }
 
 impl<'a> AuthorizationEndpoint<'a> {
     fn new(
-        registrar: &'a ClientMap, authorizer: &'a mut AuthMap<TestGenerator>,
+        registrar: &'a mut ClientMap, authorizer: &'a mut AuthMap<TestGenerator>,
         solicitor: &'a mut (dyn OwnerSolicitor<CraftedRequest> + Send + Sync),
     ) -> Self {
         Self {
@@ -35,7 +35,7 @@ impl<'a> AuthorizationEndpoint<'a> {
 impl<'a> Endpoint<CraftedRequest> for AuthorizationEndpoint<'a> {
     type Error = Error<CraftedRequest>;
 
-    fn registrar(&self) -> Option<&(dyn crate::primitives::Registrar + Sync)> {
+    fn registrar(&mut self) -> Option<&mut (dyn crate::primitives::Registrar + Sync)> {
         Some(self.registrar)
     }
     fn authorizer_mut(&mut self) -> Option<&mut (dyn crate::primitives::Authorizer + Send)> {
@@ -70,6 +70,8 @@ struct AuthorizationSetup {
 
 impl AuthorizationSetup {
     fn new() -> AuthorizationSetup {
+        use crate::primitives::Registrar;
+
         let mut registrar = ClientMap::new();
         let authorizer = AuthMap::new(TestGenerator("AuthToken".to_string()));
 

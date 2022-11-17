@@ -1,5 +1,7 @@
 //! Async versions of all primitives traits.
 use async_trait::async_trait;
+use oxide_auth::primitives::prelude::Client;
+use oxide_auth::primitives::registrar::EncodedClient;
 use oxide_auth::primitives::{grant::Grant, scope::Scope};
 use oxide_auth::primitives::issuer::{IssuedToken, RefreshedToken};
 use oxide_auth::primitives::{
@@ -70,6 +72,10 @@ pub trait Registrar {
     ) -> Result<PreGrant, RegistrarError>;
 
     async fn check(&self, client_id: &str, passphrase: Option<&[u8]>) -> Result<(), RegistrarError>;
+
+    async fn register(&mut self, client: Client) -> Result<(), RegistrarError>;
+
+    async fn query(&self, client_id: &str) -> Option<EncodedClient>;
 }
 
 #[async_trait]
@@ -89,5 +95,14 @@ where
 
     async fn check(&self, client_id: &str, passphrase: Option<&[u8]>) -> Result<(), RegistrarError> {
         registrar::Registrar::check(self, client_id, passphrase)
+    }
+
+    async fn register(&mut self, client: Client) -> Result<(), RegistrarError> {
+        registrar::Registrar::register(self, client)
+    }
+
+    /// Get a encoded client record.
+    async fn query(&self, client_id: &str) -> Option<EncodedClient> {
+        registrar::Registrar::query(self, client_id)
     }
 }
