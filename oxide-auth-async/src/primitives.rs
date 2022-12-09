@@ -8,6 +8,7 @@ use oxide_auth::primitives::{
     authorizer, registrar, issuer,
     registrar::{ClientUrl, BoundClient, RegistrarError, PreGrant},
 };
+use url::Url;
 
 #[async_trait]
 pub trait Authorizer {
@@ -76,6 +77,10 @@ pub trait Registrar {
     async fn register(&mut self, client: Client) -> Result<(), RegistrarError>;
 
     async fn query(&self, client_id: &str) -> Option<EncodedClient>;
+
+    async fn add_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError>;
+
+    async fn del_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError>;
 }
 
 #[async_trait]
@@ -104,5 +109,13 @@ where
     /// Get a encoded client record.
     async fn query(&self, client_id: &str) -> Option<EncodedClient> {
         registrar::Registrar::query(self, client_id)
+    }
+
+    async fn add_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {
+        registrar::Registrar::add_uri(self, client_id, uri)
+    }
+
+    async fn del_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {
+        registrar::Registrar::add_uri(self, client_id, uri)
     }
 }

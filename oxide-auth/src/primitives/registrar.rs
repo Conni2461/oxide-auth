@@ -49,6 +49,12 @@ pub trait Registrar {
 
     /// Get a encoded client record.
     fn query(&self, client_id: &str) -> Option<EncodedClient>;
+
+    /// Add a uri to a client record.
+    fn add_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError>;
+
+    /// Remove a uri to a client record.
+    fn del_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError>;
 }
 
 /// An url that has been registered.
@@ -695,6 +701,14 @@ impl<'s, R: Registrar + ?Sized> Registrar for &'s mut R {
     fn query(&self, client_id: &str) -> Option<EncodedClient> {
         (**self).query(client_id)
     }
+
+    fn add_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {
+        (**self).add_uri(client_id, uri)
+    }
+
+    fn del_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {
+        (**self).del_uri(client_id, uri)
+    }
 }
 
 impl<R: Registrar + ?Sized> Registrar for Box<R> {
@@ -716,6 +730,14 @@ impl<R: Registrar + ?Sized> Registrar for Box<R> {
 
     fn query(&self, client_id: &str) -> Option<EncodedClient> {
         (**self).query(client_id)
+    }
+
+    fn add_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {
+        (**self).add_uri(client_id, uri)
+    }
+
+    fn del_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {
+        (**self).del_uri(client_id, uri)
     }
 }
 
@@ -739,6 +761,14 @@ impl<'s, R: Registrar + ?Sized + 's> Registrar for MutexGuard<'s, R> {
     fn query(&self, client_id: &str) -> Option<EncodedClient> {
         (**self).query(client_id)
     }
+
+    fn add_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {
+        (**self).add_uri(client_id, uri)
+    }
+
+    fn del_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {
+        (**self).del_uri(client_id, uri)
+    }
 }
 
 impl<'s, R: Registrar + ?Sized + 's> Registrar for RwLockWriteGuard<'s, R> {
@@ -760,6 +790,14 @@ impl<'s, R: Registrar + ?Sized + 's> Registrar for RwLockWriteGuard<'s, R> {
 
     fn query(&self, client_id: &str) -> Option<EncodedClient> {
         (**self).query(client_id)
+    }
+
+    fn add_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {
+        (**self).add_uri(client_id, uri)
+    }
+
+    fn del_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {
+        (**self).del_uri(client_id, uri)
     }
 }
 
@@ -828,6 +866,21 @@ impl Registrar for ClientMap {
 
     fn query(&self, client_id: &str) -> Option<EncodedClient> {
         self.clients.get(client_id).map(Clone::clone)
+    }
+
+    fn add_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {
+        if let Some(c) = self.clients.get_mut(client_id) {
+            c.additional_redirect_uris.push(uri.into());
+        }
+        Ok(())
+    }
+
+    fn del_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {
+        if let Some(c) = self.clients.get_mut(client_id) {
+            let uri: RegisteredUrl = uri.into();
+            c.additional_redirect_uris.retain(|u| u != &uri);
+        }
+        Ok(())
     }
 }
 
