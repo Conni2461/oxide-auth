@@ -4,6 +4,7 @@
 //! `AsActor<_>` to create an actor implementing endpoint functionality via messages.
 #![warn(missing_docs)]
 
+#[cfg(feature = "actor")]
 use actix::{MailboxError, Message};
 use actix_web::{
     body::BoxBody,
@@ -24,8 +25,10 @@ use oxide_auth::{
 use std::{borrow::Cow, convert::TryFrom, error, fmt};
 use url::Url;
 
+#[cfg(feature = "actor")]
 mod operations;
 
+#[cfg(feature = "actor")]
 pub use operations::{Authorize, Refresh, Resource, Token, ClientCredentials};
 
 /// Describes an operation that can be performed in the presence of an `Endpoint`
@@ -85,6 +88,7 @@ pub use operations::{Authorize, Refresh, Resource, Token, ClientCredentials};
 ///     }
 /// }
 /// ```
+#[cfg(feature = "actor")]
 pub trait OAuthOperation: Sized + 'static {
     /// The success-type produced by an OAuthOperation
     type Item: 'static;
@@ -105,6 +109,7 @@ pub trait OAuthOperation: Sized + 'static {
 }
 
 /// A message type to easily send `OAuthOperation`s to an actor
+#[cfg(feature = "actor")]
 pub struct OAuthMessage<Operation, Extras>(Operation, Extras);
 
 #[derive(Clone, Debug)]
@@ -262,6 +267,7 @@ impl OAuthResponse {
     }
 }
 
+#[cfg(feature = "actor")]
 impl<Operation, Extras> OAuthMessage<Operation, Extras> {
     /// Produce an OAuthOperation from a wrapping OAuthMessage
     pub fn into_inner(self) -> (Operation, Extras) {
@@ -335,6 +341,7 @@ impl WebResponse for OAuthResponse {
     }
 }
 
+#[cfg(feature = "actor")]
 impl<Operation, Extras> Message for OAuthMessage<Operation, Extras>
 where
     Operation: OAuthOperation + 'static,
@@ -408,6 +415,7 @@ impl From<InvalidHeaderValue> for WebError {
     }
 }
 
+#[cfg(feature = "actor")]
 impl From<MailboxError> for WebError {
     fn from(e: MailboxError) -> Self {
         match e {
