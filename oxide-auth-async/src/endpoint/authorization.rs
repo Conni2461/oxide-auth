@@ -2,7 +2,9 @@ use std::{borrow::Cow, marker::PhantomData};
 
 use oxide_auth::{
     endpoint::{WebResponse, QueryParameter, NormalizedParameter},
-    code_grant::authorization::{Error as AuthorizationError, Request as AuthorizationRequest},
+    code_grant::{
+        authorization::{Error as AuthorizationError, Request as AuthorizationRequest},
+    },
 };
 
 use crate::code_grant::authorization::{
@@ -200,7 +202,23 @@ where
     R: WebRequest,
 {
     match error {
-        AuthorizationError::Ignore => Err(endpoint.error(OAuthError::DenySilently)),
+        AuthorizationError::Ignore => {
+            let mut response = endpoint.response(
+                request,
+                Template::new_bad(None),
+            )?;
+            response.client_error().map_err(|err| endpoint.web_error(err))?;
+            response
+                .body_json(
+                    &serde_json::to_string(&serde_json::json!({
+                      "error": "invalid_client",
+                    }))
+                    .map_err(|_| endpoint.error(OAuthError::PrimitiveError))?,
+                )
+                .map_err(|err| endpoint.web_error(err))?;
+
+            Ok(response)
+        }
         AuthorizationError::Redirect(mut target) => {
             let mut response =
                 endpoint.response(request, Template::new_redirect(Some(target.description())))?;

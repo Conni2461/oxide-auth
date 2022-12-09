@@ -180,23 +180,16 @@ fn authorization_error<E: Endpoint<R>, R: WebRequest>(
                 }
                 .into(),
             )?;
-            let query = request
-                .query()
-                .map_err(|_| endpoint.error(OAuthError::BadRequest))?;
-            let uri = &query
-                .unique_value("redirect_uri")
-                .ok_or(|| "missing uri")
-                .map_err(|_| endpoint.error(OAuthError::BadRequest))?;
+            response.client_error().map_err(|err| endpoint.web_error(err))?;
+            response
+                .body_json(
+                    &serde_json::to_string(&serde_json::json!({
+                      "error": "invalid_client",
+                    }))
+                    .map_err(|_| endpoint.error(OAuthError::PrimitiveError))?,
+                )
+                .map_err(|err| endpoint.web_error(err))?;
 
-            let uri = match query.unique_value("state") {
-                Some(v) => {
-                    url::Url::parse_with_params(uri, &[("error", "invalid_client"), ("state", &v)])
-                }
-                None => url::Url::parse_with_params(uri, &[("error", "invalid_client")]),
-            }
-            .map_err(|_| endpoint.error(OAuthError::BadRequest))?;
-
-            response.redirect(uri).map_err(|err| endpoint.web_error(err))?;
             Ok(response)
         }
         AuthorizationError::Redirect(mut target) => {
