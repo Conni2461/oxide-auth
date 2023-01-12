@@ -1,4 +1,6 @@
 //! Async versions of all primitives traits.
+use std::collections::HashMap;
+
 use async_trait::async_trait;
 use oxide_auth::primitives::prelude::Client;
 use oxide_auth::primitives::registrar::EncodedClient;
@@ -78,6 +80,8 @@ pub trait Registrar {
 
     async fn query(&self, client_id: &str) -> Option<EncodedClient>;
 
+    async fn query_by_extensions(&self, query: HashMap<String, String>) -> Vec<EncodedClient>;
+
     async fn add_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError>;
 
     async fn del_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError>;
@@ -109,6 +113,10 @@ where
     /// Get a encoded client record.
     async fn query(&self, client_id: &str) -> Option<EncodedClient> {
         registrar::Registrar::query(self, client_id)
+    }
+
+    async fn query_by_extensions(&self, query: HashMap<String, String>) -> Vec<EncodedClient> {
+        registrar::Registrar::query_by_extensions(self, query)
     }
 
     async fn add_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {

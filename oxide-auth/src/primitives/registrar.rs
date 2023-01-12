@@ -50,6 +50,10 @@ pub trait Registrar {
     /// Get a encoded client record.
     fn query(&self, client_id: &str) -> Option<EncodedClient>;
 
+    /// Get a list of encoded client records
+    /// All keys in the HashMap need to map, It acts like a AND query
+    fn query_by_extensions(&self, query: HashMap<String, String>) -> Vec<EncodedClient>;
+
     /// Add a uri to a client record.
     fn add_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError>;
 
@@ -249,6 +253,7 @@ pub struct Client {
     additional_redirect_uris: Vec<RegisteredUrl>,
     default_scope: Scope,
     client_type: ClientType,
+    extensions: HashMap<String, String>,
 }
 
 /// A client whose credentials have been wrapped by a password policy.
@@ -275,6 +280,9 @@ pub struct EncodedClient {
 
     /// The authentication data.
     pub encoded_client: ClientType,
+
+    /// Encoded Extensions
+    pub extensions: HashMap<String, String>,
 }
 
 /// Recombines an `EncodedClient` and a  `PasswordPolicy` to check authentication.
@@ -511,6 +519,7 @@ impl Client {
             additional_redirect_uris: vec![],
             default_scope,
             client_type: ClientType::Public,
+            extensions: HashMap::default(),
         }
     }
 
@@ -526,7 +535,14 @@ impl Client {
             client_type: ClientType::Confidential {
                 passdata: passphrase.to_owned(),
             },
+            extensions: HashMap::default(),
         }
+    }
+
+    /// Insert a new extension key value pair
+    pub fn insert_extension_kv(mut self, key: String, value: String) -> Self {
+        self.extensions.insert(key, value);
+        self
     }
 
     /// Add additional redirect uris.
@@ -554,6 +570,7 @@ impl Client {
             additional_redirect_uris: self.additional_redirect_uris,
             default_scope: self.default_scope,
             encoded_client,
+            extensions: self.extensions,
         }
     }
 }
@@ -702,6 +719,10 @@ impl<'s, R: Registrar + ?Sized> Registrar for &'s mut R {
         (**self).query(client_id)
     }
 
+    fn query_by_extensions(&self, query: HashMap<String, String>) -> Vec<EncodedClient> {
+        (**self).query_by_extensions(query)
+    }
+
     fn add_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {
         (**self).add_uri(client_id, uri)
     }
@@ -730,6 +751,10 @@ impl<R: Registrar + ?Sized> Registrar for Box<R> {
 
     fn query(&self, client_id: &str) -> Option<EncodedClient> {
         (**self).query(client_id)
+    }
+
+    fn query_by_extensions(&self, query: HashMap<String, String>) -> Vec<EncodedClient> {
+        (**self).query_by_extensions(query)
     }
 
     fn add_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {
@@ -762,6 +787,10 @@ impl<'s, R: Registrar + ?Sized + 's> Registrar for MutexGuard<'s, R> {
         (**self).query(client_id)
     }
 
+    fn query_by_extensions(&self, query: HashMap<String, String>) -> Vec<EncodedClient> {
+        (**self).query_by_extensions(query)
+    }
+
     fn add_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {
         (**self).add_uri(client_id, uri)
     }
@@ -790,6 +819,10 @@ impl<'s, R: Registrar + ?Sized + 's> Registrar for RwLockWriteGuard<'s, R> {
 
     fn query(&self, client_id: &str) -> Option<EncodedClient> {
         (**self).query(client_id)
+    }
+
+    fn query_by_extensions(&self, query: HashMap<String, String>) -> Vec<EncodedClient> {
+        (**self).query_by_extensions(query)
     }
 
     fn add_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {
@@ -866,6 +899,23 @@ impl Registrar for ClientMap {
 
     fn query(&self, client_id: &str) -> Option<EncodedClient> {
         self.clients.get(client_id).map(Clone::clone)
+    }
+
+    fn query_by_extensions(&self, query: HashMap<String, String>) -> Vec<EncodedClient> {
+        self.clients
+            .values()
+            .filter(|c| {
+                for q in query.iter() {
+                    if let Some(v) = c.extensions.get(q.0) {
+                        if q.1 != v {
+                            return false;
+                        }
+                    }
+                }
+                true
+            })
+            .map(Clone::clone)
+            .collect()
     }
 
     fn add_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {

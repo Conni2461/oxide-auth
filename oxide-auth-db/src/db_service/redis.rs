@@ -6,6 +6,7 @@ use oxide_auth::primitives::registrar::{ClientType, EncodedClient, RegisteredUrl
 use r2d2_redis::r2d2::Pool;
 use r2d2_redis::redis::{Commands, RedisError, ErrorKind};
 use r2d2_redis::RedisConnectionManager;
+use std::collections::HashMap;
 use std::str::FromStr;
 use serde::{Serialize, Deserialize};
 use url::Url;
@@ -45,6 +46,8 @@ pub struct StringfiedEncodedClient {
 
     /// client_secret, for authentication.
     pub client_secret: Option<String>,
+
+    pub extensions: HashMap<String, String>,
 }
 
 impl StringfiedEncodedClient {
@@ -72,6 +75,7 @@ impl StringfiedEncodedClient {
             )
             .unwrap(),
             encoded_client: client_type,
+            extensions: self.extensions.clone(),
         })
     }
 
@@ -92,6 +96,7 @@ impl StringfiedEncodedClient {
             additional_redirect_uris,
             default_scope,
             client_secret,
+            extensions: encoded_client.extensions.clone(),
         }
     }
 }
