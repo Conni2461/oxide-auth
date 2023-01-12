@@ -59,6 +59,9 @@ pub trait Registrar {
 
     /// Remove a uri to a client record.
     fn del_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError>;
+
+    /// Delete a client record.
+    fn del_client(&mut self, client_id: &str) -> Result<(), RegistrarError>;
 }
 
 /// An url that has been registered.
@@ -730,6 +733,10 @@ impl<'s, R: Registrar + ?Sized> Registrar for &'s mut R {
     fn del_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {
         (**self).del_uri(client_id, uri)
     }
+
+    fn del_client(&mut self, client_id: &str) -> Result<(), RegistrarError> {
+        (**self).del_client(client_id)
+    }
 }
 
 impl<R: Registrar + ?Sized> Registrar for Box<R> {
@@ -763,6 +770,10 @@ impl<R: Registrar + ?Sized> Registrar for Box<R> {
 
     fn del_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {
         (**self).del_uri(client_id, uri)
+    }
+
+    fn del_client(&mut self, client_id: &str) -> Result<(), RegistrarError> {
+        (**self).del_client(client_id)
     }
 }
 
@@ -798,6 +809,10 @@ impl<'s, R: Registrar + ?Sized + 's> Registrar for MutexGuard<'s, R> {
     fn del_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {
         (**self).del_uri(client_id, uri)
     }
+
+    fn del_client(&mut self, client_id: &str) -> Result<(), RegistrarError> {
+        (**self).del_client(client_id)
+    }
 }
 
 impl<'s, R: Registrar + ?Sized + 's> Registrar for RwLockWriteGuard<'s, R> {
@@ -831,6 +846,10 @@ impl<'s, R: Registrar + ?Sized + 's> Registrar for RwLockWriteGuard<'s, R> {
 
     fn del_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {
         (**self).del_uri(client_id, uri)
+    }
+
+    fn del_client(&mut self, client_id: &str) -> Result<(), RegistrarError> {
+        (**self).del_client(client_id)
     }
 }
 
@@ -930,6 +949,11 @@ impl Registrar for ClientMap {
             let uri: RegisteredUrl = uri.into();
             c.additional_redirect_uris.retain(|u| u != &uri);
         }
+        Ok(())
+    }
+
+    fn del_client(&mut self, client_id: &str) -> Result<(), RegistrarError> {
+        self.clients.remove(client_id);
         Ok(())
     }
 }

@@ -85,6 +85,8 @@ pub trait Registrar {
     async fn add_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError>;
 
     async fn del_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError>;
+
+    async fn del_client(&mut self, client_id: &str) -> Result<(), RegistrarError>;
 }
 
 #[async_trait]
@@ -125,5 +127,9 @@ where
 
     async fn del_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {
         registrar::Registrar::add_uri(self, client_id, uri)
+    }
+
+    async fn del_client(&mut self, client_id: &str) -> Result<(), RegistrarError> {
+        registrar::Registrar::del_client(self, client_id)
     }
 }

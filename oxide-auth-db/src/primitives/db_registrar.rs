@@ -146,6 +146,10 @@ impl<T: OauthClientDBRepository> Registrar for DBRegistrar<T> {
     fn del_uri(&mut self, _client_id: &str, _uri: Url) -> Result<(), RegistrarError> {
         todo!("add implementation for: del_uri");
     }
+
+    fn del_client(&mut self, _client_id: &str) -> Result<(), RegistrarError> {
+        todo!("add implementation for: del_client");
+    }
 }
 
 #[cfg(test)]
