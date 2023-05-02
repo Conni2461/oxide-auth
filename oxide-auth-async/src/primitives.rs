@@ -77,16 +77,6 @@ pub trait Registrar {
     async fn check(&self, client_id: &str, passphrase: Option<&[u8]>) -> Result<(), RegistrarError>;
 
     async fn register(&mut self, client: Client) -> Result<(), RegistrarError>;
-
-    async fn query(&self, client_id: &str) -> Option<EncodedClient>;
-
-    async fn query_by_extensions(&self, query: HashMap<String, String>) -> Vec<EncodedClient>;
-
-    async fn add_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError>;
-
-    async fn del_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError>;
-
-    async fn del_client(&mut self, client_id: &str) -> Result<(), RegistrarError>;
 }
 
 #[async_trait]
@@ -110,26 +100,5 @@ where
 
     async fn register(&mut self, client: Client) -> Result<(), RegistrarError> {
         registrar::Registrar::register(self, client)
-    }
-
-    /// Get a encoded client record.
-    async fn query(&self, client_id: &str) -> Option<EncodedClient> {
-        registrar::Registrar::query(self, client_id)
-    }
-
-    async fn query_by_extensions(&self, query: HashMap<String, String>) -> Vec<EncodedClient> {
-        registrar::Registrar::query_by_extensions(self, query)
-    }
-
-    async fn add_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {
-        registrar::Registrar::add_uri(self, client_id, uri)
-    }
-
-    async fn del_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {
-        registrar::Registrar::add_uri(self, client_id, uri)
-    }
-
-    async fn del_client(&mut self, client_id: &str) -> Result<(), RegistrarError> {
-        registrar::Registrar::del_client(self, client_id)
     }
 }

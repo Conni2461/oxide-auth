@@ -130,26 +130,6 @@ impl<T: OauthClientDBRepository> Registrar for DBRegistrar<T> {
             .regist_from_encoded_client(encoded_client)
             .map_err(|_e| RegistrarError::Unspecified)
     }
-
-    fn query(&self, client_id: &str) -> Option<EncodedClient> {
-        self.repo.find_client_by_id(client_id).ok()
-    }
-
-    fn query_by_extensions(&self, query: HashMap<String, String>) -> Vec<EncodedClient> {
-        todo!("add implementation for: query_by_extensions");
-    }
-
-    fn add_uri(&mut self, _client_id: &str, _uri: Url) -> Result<(), RegistrarError> {
-        todo!("add implementation for: add_uri");
-    }
-
-    fn del_uri(&mut self, _client_id: &str, _uri: Url) -> Result<(), RegistrarError> {
-        todo!("add implementation for: del_uri");
-    }
-
-    fn del_client(&mut self, _client_id: &str) -> Result<(), RegistrarError> {
-        todo!("add implementation for: del_client");
-    }
 }
 
 #[cfg(test)]

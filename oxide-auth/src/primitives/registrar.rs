@@ -46,22 +46,6 @@ pub trait Registrar {
 
     /// Insert or update the client record.
     fn register(&mut self, client: Client) -> Result<(), RegistrarError>;
-
-    /// Get a encoded client record.
-    fn query(&self, client_id: &str) -> Option<EncodedClient>;
-
-    /// Get a list of encoded client records
-    /// All keys in the HashMap need to map, It acts like a AND query
-    fn query_by_extensions(&self, query: HashMap<String, String>) -> Vec<EncodedClient>;
-
-    /// Add a uri to a client record.
-    fn add_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError>;
-
-    /// Remove a uri to a client record.
-    fn del_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError>;
-
-    /// Delete a client record.
-    fn del_client(&mut self, client_id: &str) -> Result<(), RegistrarError>;
 }
 
 /// An url that has been registered.
@@ -717,26 +701,6 @@ impl<'s, R: Registrar + ?Sized> Registrar for &'s mut R {
     fn register(&mut self, client: Client) -> Result<(), RegistrarError> {
         (**self).register(client)
     }
-
-    fn query(&self, client_id: &str) -> Option<EncodedClient> {
-        (**self).query(client_id)
-    }
-
-    fn query_by_extensions(&self, query: HashMap<String, String>) -> Vec<EncodedClient> {
-        (**self).query_by_extensions(query)
-    }
-
-    fn add_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {
-        (**self).add_uri(client_id, uri)
-    }
-
-    fn del_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {
-        (**self).del_uri(client_id, uri)
-    }
-
-    fn del_client(&mut self, client_id: &str) -> Result<(), RegistrarError> {
-        (**self).del_client(client_id)
-    }
 }
 
 impl<R: Registrar + ?Sized> Registrar for Box<R> {
@@ -754,26 +718,6 @@ impl<R: Registrar + ?Sized> Registrar for Box<R> {
 
     fn register(&mut self, client: Client) -> Result<(), RegistrarError> {
         (**self).register(client)
-    }
-
-    fn query(&self, client_id: &str) -> Option<EncodedClient> {
-        (**self).query(client_id)
-    }
-
-    fn query_by_extensions(&self, query: HashMap<String, String>) -> Vec<EncodedClient> {
-        (**self).query_by_extensions(query)
-    }
-
-    fn add_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {
-        (**self).add_uri(client_id, uri)
-    }
-
-    fn del_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {
-        (**self).del_uri(client_id, uri)
-    }
-
-    fn del_client(&mut self, client_id: &str) -> Result<(), RegistrarError> {
-        (**self).del_client(client_id)
     }
 }
 
@@ -793,26 +737,6 @@ impl<'s, R: Registrar + ?Sized + 's> Registrar for MutexGuard<'s, R> {
     fn register(&mut self, client: Client) -> Result<(), RegistrarError> {
         (**self).register(client)
     }
-
-    fn query(&self, client_id: &str) -> Option<EncodedClient> {
-        (**self).query(client_id)
-    }
-
-    fn query_by_extensions(&self, query: HashMap<String, String>) -> Vec<EncodedClient> {
-        (**self).query_by_extensions(query)
-    }
-
-    fn add_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {
-        (**self).add_uri(client_id, uri)
-    }
-
-    fn del_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {
-        (**self).del_uri(client_id, uri)
-    }
-
-    fn del_client(&mut self, client_id: &str) -> Result<(), RegistrarError> {
-        (**self).del_client(client_id)
-    }
 }
 
 impl<'s, R: Registrar + ?Sized + 's> Registrar for RwLockWriteGuard<'s, R> {
@@ -830,26 +754,6 @@ impl<'s, R: Registrar + ?Sized + 's> Registrar for RwLockWriteGuard<'s, R> {
 
     fn register(&mut self, client: Client) -> Result<(), RegistrarError> {
         (**self).register(client)
-    }
-
-    fn query(&self, client_id: &str) -> Option<EncodedClient> {
-        (**self).query(client_id)
-    }
-
-    fn query_by_extensions(&self, query: HashMap<String, String>) -> Vec<EncodedClient> {
-        (**self).query_by_extensions(query)
-    }
-
-    fn add_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {
-        (**self).add_uri(client_id, uri)
-    }
-
-    fn del_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {
-        (**self).del_uri(client_id, uri)
-    }
-
-    fn del_client(&mut self, client_id: &str) -> Result<(), RegistrarError> {
-        (**self).del_client(client_id)
     }
 }
 
@@ -913,47 +817,6 @@ impl Registrar for ClientMap {
         let password_policy = Self::current_policy(&self.password_policy);
         self.clients
             .insert(client.client_id.clone(), client.encode(password_policy));
-        Ok(())
-    }
-
-    fn query(&self, client_id: &str) -> Option<EncodedClient> {
-        self.clients.get(client_id).map(Clone::clone)
-    }
-
-    fn query_by_extensions(&self, query: HashMap<String, String>) -> Vec<EncodedClient> {
-        self.clients
-            .values()
-            .filter(|c| {
-                for q in query.iter() {
-                    if let Some(v) = c.extensions.get(q.0) {
-                        if q.1 != v {
-                            return false;
-                        }
-                    }
-                }
-                true
-            })
-            .map(Clone::clone)
-            .collect()
-    }
-
-    fn add_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {
-        if let Some(c) = self.clients.get_mut(client_id) {
-            c.additional_redirect_uris.push(uri.into());
-        }
-        Ok(())
-    }
-
-    fn del_uri(&mut self, client_id: &str, uri: Url) -> Result<(), RegistrarError> {
-        if let Some(c) = self.clients.get_mut(client_id) {
-            let uri: RegisteredUrl = uri.into();
-            c.additional_redirect_uris.retain(|u| u != &uri);
-        }
-        Ok(())
-    }
-
-    fn del_client(&mut self, client_id: &str) -> Result<(), RegistrarError> {
-        self.clients.remove(client_id);
         Ok(())
     }
 }
