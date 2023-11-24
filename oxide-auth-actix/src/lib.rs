@@ -202,6 +202,11 @@ impl OAuthRequest {
         self.auth.as_deref()
     }
 
+    /// Set the authorization header from the request
+    pub fn set_authorization_header(&mut self, auth: Option<String>) {
+        self.auth = auth;
+    }
+
     /// Fetch the query for this request
     pub fn query(&self) -> Option<&NormalizedParameter> {
         self.query.as_ref()
