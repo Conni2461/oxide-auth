@@ -14,6 +14,7 @@ use actix_web::{
         StatusCode,
     },
     web::Form,
+    web::Json,
     web::Query,
     FromRequest, HttpRequest, HttpResponse, HttpResponseBuilder, Responder, ResponseError,
 };
@@ -180,10 +181,16 @@ impl OAuthRequest {
             .await
             .ok()
             .map(|q: Query<NormalizedParameter>| q.into_inner());
-        let body = Form::from_request(&req, &mut payload)
+        let mut body = Json::from_request(&req, &mut payload)
             .await
             .ok()
-            .map(|b: Form<NormalizedParameter>| b.into_inner());
+            .map(|b: Json<NormalizedParameter>| b.into_inner());
+        if body.is_none() {
+            body = Form::from_request(&req, &mut payload)
+                .await
+                .ok()
+                .map(|b: Form<NormalizedParameter>| b.into_inner());
+        }
 
         let mut all_auth = req.headers().get_all(header::AUTHORIZATION);
         let optional = all_auth.next();
